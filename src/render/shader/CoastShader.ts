@@ -13,7 +13,6 @@ export function applyCoastShader(data: number[][], depth: number[][], shader: nu
 
 			let n = Math.max(0, Math.floor(45 / (0.5 * depth[y][x] + 1) - 3)) + Math.floor(Math.min(waveNoise.get(x, y) * 30 + 30, 47));
 			shader[y][x] = n << 16 | n << 8 | 0xff;
-			console.log(shader[y][x]);
 		}
 	}
 }

@@ -2,7 +2,7 @@ import {Noise} from "./NoiseGenerator";
 
 let terrainNoise = new Noise(0.0085);
 
-export function applyTerrainShader(data: number[][], depth: number[][], shader: number[][]) {
+export function applyTerrainShader(data: number[][], depth: number[][], shader: number[][], maskList: number[][]) {
 	let width = data[0].length, height = data.length;
 	for (let y = 0; y < height; y++) {
 		let row = data[y];
@@ -25,6 +25,7 @@ export function applyTerrainShader(data: number[][], depth: number[][], shader: 
 			g = Math.max(0, Math.min(255, g));
 			b = Math.max(0, Math.min(255, b));
 			shader[y][x] = r << 16 | g << 8 | b;
+			maskList[y][x] = 1;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-import {interactionManager, renderer} from "../main";
+import {eventManager, interactionManager, renderer} from "../main";
 import {ClickInteractionHandler, DragInteractionHandler, HoverInteractionHandler, ScrollInteractionHandler} from "./InteractionHandlerTypes";
 import {InteractionRegistry} from "./InteractionRegistry";
 

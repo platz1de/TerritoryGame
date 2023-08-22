@@ -2,22 +2,19 @@ import {interactionRegistry} from "../interaction/InteractionManager";
 import {DragInteractionHandler, ScrollInteractionHandler} from "../interaction/InteractionHandlerTypes";
 import {AxialCoordinate} from "../math/AxialCoordinate";
 import {gameMapRendererManager} from "./GameManager";
+import {eventManager, gameManager} from "../main";
 
 export class BasicMapNavigationHandler implements ScrollInteractionHandler, DragInteractionHandler {
 	x: number = 0;
 	y: number = 0;
-	xSize: number = 0;
-	ySize: number = 0;
 	zoom: number = 1;
 	dragX: number = 0;
 	dragY: number = 0;
 
-	enable(xSize: number, ySize: number) {
+	enable() {
 		this.x = gameMapRendererManager.container.x;
 		this.y = gameMapRendererManager.container.y;
 		console.log(this.x, this.y);
-		this.xSize = xSize;
-		this.ySize = ySize;
 		this.zoom = 1;
 		interactionRegistry.registerDragHandler(this);
 		interactionRegistry.registerScrollHandler(this);
@@ -34,6 +31,8 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		this.x = -mapX * this.zoom + x;
 		this.y = -mapY * this.zoom + y;
 		gameMapRendererManager.container.setTransform(this.x, this.y, this.zoom, this.zoom);
+		eventManager.onMapMove();
+		eventManager.onScroll();
 	}
 
 	testScroll(x: number, y: number): boolean {
@@ -61,11 +60,12 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		this.dragX = x;
 		this.dragY = y;
 		gameMapRendererManager.container.setTransform(this.x, this.y, this.zoom, this.zoom);
+		eventManager.onMapMove();
 	}
 
 	isInMap(x: number, y: number): boolean {
 		let hex = this.getHexTileAt(x, y).toOffset();
-		return hex.x >= 0 && hex.x < this.xSize && hex.y >= 0 && hex.y < this.ySize;
+		return hex.x >= 0 && hex.x < gameManager.width && hex.y >= 0 && hex.y < gameManager.height;
 	}
 
 	getHexTileAt(x: number, y: number): AxialCoordinate {

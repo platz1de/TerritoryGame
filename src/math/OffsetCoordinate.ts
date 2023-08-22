@@ -12,4 +12,16 @@ export class OffsetCoordinate {
 	toAxial() {
 		return new AxialCoordinate(this.x - (this.y - (this.y & 1)) / 2, this.y)
 	}
+
+	add(x: number, y: number) {
+		return new OffsetCoordinate(this.x + x, this.y + y);
+	}
+
+	getCenterX() {
+		return (this.x * 2 + (this.y & 1)) * 1.73205080757;
+	}
+
+	getCenterY() {
+		return this.y * 3;
+	}
 }

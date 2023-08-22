@@ -19,6 +19,6 @@ export class AxialCoordinate {
 	}
 
 	toOffset() {
-		return new OffsetCoordinate(this.r, this.q + (this.r - (this.r & 1)) / 2);
+		return new OffsetCoordinate(this.q + (this.r - (this.r & 1)) / 2, this.r);
 	}
 }

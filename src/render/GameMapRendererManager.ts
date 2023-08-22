@@ -7,6 +7,7 @@ import {applyTerrainShader} from "./shader/TerrainShader";
 export class GameMapRendererManager {
 	container: Container;
 	rows: Graphics[] = [];
+	terrainMask: Graphics;
 
 	loadMap(data: number[][]) {
 		this.container = new Container();
@@ -14,14 +15,20 @@ export class GameMapRendererManager {
 
 		let depth = getDistances(data);
 		let shader = data.map(row => row.map(() => 0x000000));
+		let maskList = data.map(row => row.map(() => 0));
 		applyCoastShader(data, depth, shader);
-		applyTerrainShader(data, depth, shader);
+		applyTerrainShader(data, depth, shader, maskList);
 
+		this.terrainMask = new Graphics();
+		this.terrainMask.beginFill(0xffffff);
 		for (let y = 0; y < data.length; y++) {
 			this.rows[y] = new Graphics();
 			renderer.renderHexMapRow(this.rows[y], shader[y], y);
 			this.container.addChild(this.rows[y]);
+			renderer.renderHexMaskRow(this.terrainMask, maskList[y], y);
 		}
+		this.terrainMask.endFill();
+		this.container.addChild(this.terrainMask);
 	}
 
 	destroy() {

@@ -1,10 +1,15 @@
 import {GameMapRendererManager} from "../render/GameMapRendererManager";
 import {BasicMapNavigationHandler} from "./BasicMapNavigationHandler";
+import {GridOutlineRenderer} from "../render/GridOutlineRenderer";
 
 export const gameMapRendererManager = new GameMapRendererManager();
+export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
 
 export class GameManager {
+	width: number;
+	height: number;
+
 	startGameScreen() {
 		gameMapRendererManager.loadMap([
 			0,
@@ -16786,11 +16791,15 @@ export class GameManager {
 
 			return resultArray
 		}, []));
-		basicMapNavigationHandler.enable(128, 131);
+		this.width = 128;
+		this.height = 131;
+		gridOutlineRenderer.init();
+		basicMapNavigationHandler.enable();
 	}
 
 	endGameScreen() {
 		gameMapRendererManager.destroy();
+		gridOutlineRenderer.destroy();
 		basicMapNavigationHandler.disable();
 	}
 }
