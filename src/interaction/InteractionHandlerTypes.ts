@@ -1,6 +1,6 @@
 export interface ClickInteractionHandler {
 	testClick(x: number, y: number): boolean;
-	onClick(): void;
+	onClick(x: number, y: number): void;
 }
 
 export interface DragInteractionHandler {

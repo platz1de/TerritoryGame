@@ -1,17 +1,20 @@
 import {GameMapRendererManager} from "../render/GameMapRendererManager";
 import {BasicMapNavigationHandler} from "./BasicMapNavigationHandler";
 import {GridOutlineRenderer} from "../render/GridOutlineRenderer";
+import {TileInteractionManager} from "./TileInteractionManager";
 
 export const gameMapRendererManager = new GameMapRendererManager();
 export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
+export const tileInteractionHandler = new TileInteractionManager();
 
 export class GameManager {
+	tileTypes: number[][];
 	width: number;
 	height: number;
 
 	startGameScreen() {
-		gameMapRendererManager.loadMap([
+		this.tileTypes = [
 			0,
 			0,
 			0,
@@ -16790,16 +16793,19 @@ export class GameManager {
 			resultArray[chunkIndex].push(item)
 
 			return resultArray
-		}, []));
+		}, []);
+		gameMapRendererManager.loadMap(this.tileTypes);
 		this.width = 128;
 		this.height = 131;
 		gridOutlineRenderer.init();
 		basicMapNavigationHandler.enable();
+		tileInteractionHandler.enable();
 	}
 
 	endGameScreen() {
 		gameMapRendererManager.destroy();
 		gridOutlineRenderer.destroy();
 		basicMapNavigationHandler.disable();
+		tileInteractionHandler.disable();
 	}
 }
