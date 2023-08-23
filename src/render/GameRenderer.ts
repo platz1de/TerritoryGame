@@ -1,5 +1,4 @@
 import {Application, Graphics} from "pixi.js"
-import {gameMapRendererManager} from "../game/GameManager";
 
 export class GameRenderer {
 	app: Application<HTMLCanvasElement>;
@@ -32,13 +31,6 @@ export class GameRenderer {
 		for (let x = 0; x < data.length; x++) {
 			if (data[x] !== 0) this.renderHexagon(x, y, target)
 		}
-	}
-
-	renderTile(x: number, y: number, color: number) {
-		let target = gameMapRendererManager.rows[y];
-		target.beginFill(color);
-		this.renderHexagon(x, y, target)
-		target.endFill();
 	}
 
 	renderHexagon(x: number, y: number, target: Graphics) {

@@ -24,4 +24,13 @@ export class OffsetCoordinate {
 	getCenterY() {
 		return this.y * 3;
 	}
+
+	onNeighbors(callback: (x: number, y: number) => void) {
+		let x = this.x, y = this.y;
+		for (let pos of y % 2 === 0 ?
+			[[x + 1, y], [x, y - 1], [x - 1, y - 1], [x - 1, y], [x - 1, y + 1], [x, y + 1]] :
+			[[x + 1, y], [x + 1, y - 1], [x, y - 1], [x - 1, y], [x, y + 1], [x + 1, y + 1]]) {
+			callback(pos[0], pos[1]);
+		}
+	}
 }

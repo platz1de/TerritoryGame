@@ -2,11 +2,15 @@ import {GameMapRendererManager} from "../render/GameMapRendererManager";
 import {BasicMapNavigationHandler} from "./BasicMapNavigationHandler";
 import {GridOutlineRenderer} from "../render/GridOutlineRenderer";
 import {TileInteractionManager} from "./TileInteractionManager";
+import {PlayerManager} from "./PlayerManager";
+import {TerritoryManager} from "./TerritoryManager";
 
 export const gameMapRendererManager = new GameMapRendererManager();
 export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
 export const tileInteractionHandler = new TileInteractionManager();
+export const territoryManager = new TerritoryManager();
+export const playerManager = new PlayerManager();
 
 export class GameManager {
 	tileTypes: number[][];
@@ -16797,6 +16801,7 @@ export class GameManager {
 		gameMapRendererManager.loadMap(this.tileTypes);
 		this.width = 128;
 		this.height = 131;
+		territoryManager.init();
 		gridOutlineRenderer.init();
 		basicMapNavigationHandler.enable();
 		tileInteractionHandler.enable();
@@ -16804,6 +16809,8 @@ export class GameManager {
 
 	endGameScreen() {
 		gameMapRendererManager.destroy();
+		territoryManager.destroy();
+		playerManager.destroy();
 		gridOutlineRenderer.destroy();
 		basicMapNavigationHandler.disable();
 		tileInteractionHandler.disable();
