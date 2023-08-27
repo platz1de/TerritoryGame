@@ -1,7 +1,8 @@
 import {gameManager} from "../main";
 import {gameMapRendererManager, playerManager, territoryManager} from "./GameManager";
-import {Container, Graphics} from "pixi.js";
+import {Container, Graphics, Matrix} from "pixi.js";
 import {OffsetCoordinate} from "../math/OffsetCoordinate";
+import {AxialCoordinate} from "../math/AxialCoordinate";
 
 export class TerritoryManager {
 	container: Container;
@@ -16,36 +17,14 @@ export class TerritoryManager {
 		for (let i = 0; i < playerManager.players.length; i++) {
 			this.territory[i] = new PlayerTerritoryRenderer(i);
 		}
-
-		this.conquer(118, 121, 0)
-		this.conquer(118, 119, 0)
-		this.conquer(118, 120, 0)
-		this.conquer(120, 122, 0)
-		this.conquer(120, 118, 0)
-		this.conquer(121, 118, 0)
-		this.conquer(121, 122, 0)
-		this.conquer(121, 121, 0)
-		this.conquer(122, 120, 0)
-		this.conquer(121, 119, 0)
-		this.conquer(120, 121, 0)
-		this.conquer(120, 119, 0)
-		this.conquer(119, 120, 0)
-		this.conquer(120, 120, 0)
-
-		this.conquer(119, 121, 0)
-		this.conquer(119, 121, 1)
-
-		this.conquer(120, 120, 1)
-		this.orderRerender();
 	}
 
 	conquer(x: number, y: number, owner: number) {
-		let target = this.territory[owner];
 		if (this.owner[y][x] !== undefined) {
 			this.territory[this.owner[y][x]].removeTile(new OffsetCoordinate(x, y));
 		}
 		this.owner[y][x] = owner;
-		target.addTile(new OffsetCoordinate(x, y));
+		this.territory[owner].addTile(new OffsetCoordinate(x, y));
 	}
 
 	orderRerender() {
@@ -72,6 +51,10 @@ class PlayerTerritoryRenderer {
 	borderTiles: number[][] = [];
 	borderPath: number[][] = [];
 	pathStatus: number[][] = [];
+	minX: number = Infinity;
+	maxX: number = -Infinity;
+	minY: number = Infinity;
+	maxY: number = -Infinity;
 
 	constructor(id: number) {
 		this.id = id;
@@ -85,6 +68,10 @@ class PlayerTerritoryRenderer {
 		hex.onNeighbors((x, y) => {
 			this.checkBorder(x, y);
 		});
+		this.minX = Math.min(this.minX, hex.x);
+		this.maxX = Math.max(this.maxX, hex.x);
+		this.minY = Math.min(this.minY, hex.y);
+		this.maxY = Math.max(this.maxY, hex.y);
 
 		let x = hex.getCenterX(), y = hex.getCenterY();
 		let yOffset = 0.9375, xOffset = Math.sqrt(2.63671875), xNormal = Math.sqrt(3);
@@ -103,10 +90,10 @@ class PlayerTerritoryRenderer {
 			x + xOnBorder, y - 2 + yOnBorder, x - xOnBorder, y - 2 + yOnBorder,
 			x - xNormal + xOnBorder, y - 1 - yOnBorder, x - xNormal, y - 0.875,
 			x - xNormal, y + 0.875, x - xNormal + xOnBorder, y + 1 + yOnBorder
-		], false);
+		]);
 	}
 
-	private adjustBorderPath(corners: number[], joinedPoints = [], isRemoval) {
+	private adjustBorderPath(corners: number[], joinedPoints = []) {
 		let touches = [];
 		for (let current = 0; current < this.borderPath.length; current++) {
 			let path = this.borderPath[current];
@@ -131,7 +118,7 @@ class PlayerTerritoryRenderer {
 
 		touches.sort((a, b) => a[2] - b[2]);
 		let edges: number[][] = [];
-		a: for (let i = 0; i < touches.length; i++) {
+		for (let i = 0; i < touches.length; i++) {
 			let b = touches[i];
 			let index = touches.findIndex((a) => a[0] === b[0] && (a[2] === b[2] + 1 || (a[2] === 0 && b[2] === 5)) && (b[1] === a[1] + 1 || b[1] === 0 && a[1] === (this.borderPath[a[0]].length / 2) - 1));
 			if (index !== -1) {
@@ -139,30 +126,30 @@ class PlayerTerritoryRenderer {
 				corners[2 * touches[index][2] + 1] = joinedPoints[4 * touches[index][2] + 1];
 				corners[2 * touches[i][2]] = joinedPoints[4 * touches[i][2] + 2];
 				corners[2 * touches[i][2] + 1] = joinedPoints[4 * touches[i][2] + 3];
+				edges.push([i, index]);
+			}
+		}
+		let changed = true;
+		while (changed) {
+			changed = false;
+			for (let i = 0; i < edges.length; i++) {
 				for (let j = 0; j < edges.length; j++) {
-					if (edges[j][0] === index) {
-						edges[j].unshift(i);
-						continue a;
-					}
-					if (edges[j][edges[j].length - 1] === i) {
-						edges[j].push(index);
-						continue a;
+					if (i === j || !edges[i] || !edges[j]) continue;
+					if (edges[j][0] === edges[i][edges[i].length - 1]) {
+						for (let k = 1; k < edges[j].length; k++) {
+							edges[i].push(edges[j][k]);
+						}
+						changed = true;
+						edges.splice(j, 1);
 					}
 				}
-				edges.push([i, index]);
 			}
 		}
 
 		if (edges.length === 1) {
 			let edge = edges[0];
 			if (edge.length === 7) {
-				this.borderPath.splice(touches[edge[0]][0], 1);
-				if (isRemoval) {
-					this.pathStatus.splice(this.pathStatus.findIndex((a) => a.includes(touches[edge[0]][0])), 1);
-				} else {
-					let index = this.pathStatus.findIndex((a) => a.includes(touches[edge[0]][0]));
-					this.pathStatus[index].splice(this.pathStatus[index].indexOf(touches[edge[0]][0]), 1);
-				}
+				this.dropPath(touches[edge[0]][0]);
 				return;
 			}
 			overSplice(this.borderPath[touches[edge[0]][0]], 2 * touches[edge[edge.length - 1]][1], 2 * edge.length, ...overSlice(corners, 2 * touches[edge[edge.length - 1]][2], 2 * touches[edge[0]][2] + 2));
@@ -215,30 +202,7 @@ class PlayerTerritoryRenderer {
 			}
 			affectedPaths.sort((a, b) => b - a);
 			for (const affectedPath of affectedPaths) {
-				console.log(...this.pathStatus, this.pathWaiting)
-				this.borderPath.splice(affectedPath, 1);
-				let i = this.pathStatus.findIndex((a) => a.includes(affectedPath));
-
-				if (i !== -1) {
-					let index = this.pathStatus[i].indexOf(affectedPath);
-					if (index === 0) {
-						for (let j = 1; j < this.pathStatus[i].length; j++) {
-							this.registerNewPath(this.pathStatus[i][j]);
-						}
-						this.pathStatus.splice(i, 1);
-					} else {
-						this.pathStatus[i].splice(index, 1);
-					}
-				} else {
-					for (const elem of this.pathWaiting) {
-						if (elem.findIndex(affectedPath) !== -1) {
-							elem.splice(elem.findIndex(affectedPath), 1);
-						}
-					}
-				}
-				for (const status of this.pathStatus) {
-					status.map((i) => i >= affectedPath ? i - 1 : i);
-				}
+				this.dropPath(affectedPath);
 			}
 			for (const added of addedPaths) {
 				this.registerNewPath(added - affectedPaths.length);
@@ -246,17 +210,41 @@ class PlayerTerritoryRenderer {
 		}
 	}
 
-	pathWaiting: number[][] = [];
+	private dropPath(id: number) {
+		this.borderPath[id] = [];
+		let i = this.pathStatus.findIndex((a) => a.includes(id)), index = this.pathStatus[i].indexOf(id);
+		if (index === 0) {
+			let status = this.pathStatus[i];
+			this.pathStatus.splice(i, 1);
+			for (let j = 1; j < status.length; j++) {
+				this.registerNewPath(status[j]);
+			}
+		} else {
+			this.pathStatus[i].splice(index, 1);
+		}
+		for (let i = 0; i < this.pathStatus.length; i++) {
+			for (let j = 0; j < this.pathStatus[i].length; j++) {
+				if (this.pathStatus[i][j] > id) {
+					this.pathStatus[i][j]--;
+				}
+			}
+		}
+		this.borderPath.splice(id, 1);
+	}
 
 	private registerNewPath(id: number) {
-		let x = this.borderPath[id][0], y = this.borderPath[id][1];
+		let hex = new AxialCoordinate((Math.sqrt(3) / 3 * this.borderPath[id][0] - 1 / 3 * this.borderPath[id][1]) / 2, this.borderPath[id][1] / 3).round().toOffset();
+		let x = hex.getCenterX(), y = hex.getCenterY();
 		let top = [];
 		for (let i = 0; i < this.borderPath.length; i++) {
 			if (i === id) continue;
 			let path = this.borderPath[i], found = [];
 			for (let j = 0; j < path.length; j += 2) {
 				if (Math.abs(path[j] - x) < 0.51 && path[j + 1] > y) {
-					found.push(path[j + 1]);
+					let yRounded = Math.round(path[j + 1]);
+					if (Math.abs(path[j] - x) < 0.01 || (yRounded % 3 === 2 ? path[j + 1] < yRounded : path[j + 1] > yRounded)) {
+						found.push(path[j + 1]);
+					}
 				}
 			}
 			if (found.length % 2 === 0) {
@@ -265,20 +253,15 @@ class PlayerTerritoryRenderer {
 				top.push([i, found.sort((a, b) => a - b)[0]]);
 			}
 		}
-		top.sort((a, b) => a[1] - b[1]);
-		console.log(top);
 		if (top.length % 2 === 0) {
-			if (this.pathWaiting[id]) {
-				this.pathStatus.push([id, ...this.pathWaiting[id]]);
-				delete this.pathWaiting[id];
-			} else {
+			if (!this.pathStatus.some((a) => a[0] === id)) {
 				this.pathStatus.push([id]);
 			}
 		} else {
+			top.sort((a, b) => a[1] - b[1]);
 			let parent = top[0][0], index = this.pathStatus.findIndex((a) => a[0] === parent);
 			if (index === -1) {
-				if (!this.pathWaiting[parent]) this.pathWaiting[parent] = [];
-				this.pathWaiting[parent].push(id);
+				this.pathStatus.push([parent, id]);
 			} else {
 				this.pathStatus[index].push(id);
 			}
@@ -286,13 +269,37 @@ class PlayerTerritoryRenderer {
 	}
 
 	removeTile(hex: OffsetCoordinate) {
-		this.tiles.splice(this.tiles.indexOf([hex.x, hex.y]), 1);
-		if (this.borderTiles.indexOf([hex.x, hex.y]) !== -1) {
-			this.borderTiles.splice(this.borderTiles.indexOf([hex.x, hex.y]), 1);
+		this.tiles.splice(this.tiles.findIndex((e) => e[0] === hex.x && e[1] === hex.y), 1);
+		if (this.borderTiles.some((e) => e[0] === hex.x && e[1] === hex.y)) {
+			this.borderTiles.splice(this.borderTiles.findIndex((e) => e[0] === hex.x && e[1] === hex.y), 1);
 		}
 		hex.onNeighbors((x, y) => {
 			this.checkBorder(x, y);
 		});
+		if (hex.x === this.minX) {
+			this.minX = Infinity;
+			for (let tile of this.tiles) {
+				this.minX = Math.min(this.minX, tile[0]);
+			}
+		}
+		if (hex.x === this.maxX) {
+			this.maxX = -Infinity;
+			for (let tile of this.tiles) {
+				this.maxX = Math.max(this.maxX, tile[0]);
+			}
+		}
+		if (hex.y === this.minY) {
+			this.minY = Infinity;
+			for (let tile of this.tiles) {
+				this.minY = Math.min(this.minY, tile[1]);
+			}
+		}
+		if (hex.y === this.maxY) {
+			this.maxY = -Infinity;
+			for (let tile of this.tiles) {
+				this.maxY = Math.max(this.maxY, tile[1]);
+			}
+		}
 
 		let x = hex.getCenterX(), y = hex.getCenterY();
 		let yOffset = 1.0625, xOffset = Math.sqrt(3.38671875), xNormal = Math.sqrt(3);
@@ -311,16 +318,20 @@ class PlayerTerritoryRenderer {
 			x + xNormal + xOnBorder, y - 1 + yOnBorder, x + xNormal, y - 1.125,
 			x + xNormal, y + 1.125, x + xNormal + xOnBorder, y + 1 - yOnBorder,
 			x - xOnBorder, y + 2 + yOnBorder, x + xOnBorder, y + 2 + yOnBorder
-		], false);
+		]);
+
+		if (this.borderPath.length === 0) {
+			this.territory.clear();
+		}
 	}
 
 	checkBorder(x: number, y: number) {
 		if (territoryManager.owner[y][x] !== this.id) return;
-		let isBorder = false, current = this.borderTiles.indexOf([x, y]);
+		let isBorder = false, current = this.borderTiles.findIndex((e) => e[0] === x && e[1] === y);
 		for (let pos of y % 2 === 0 ?
 			[[x + 1, y], [x, y - 1], [x - 1, y - 1], [x - 1, y], [x - 1, y + 1], [x, y + 1]] :
 			[[x + 1, y], [x + 1, y - 1], [x, y - 1], [x - 1, y], [x, y + 1], [x + 1, y + 1]]) {
-			if (pos[0] < 0 || pos[0] >= gameManager.width || pos[1] < 0 || pos[1] >= gameManager.height) {
+			if (pos[0] < 0 || pos[0] >= gameManager.width || pos[1] < 0 || pos[1] >= gameManager.height || gameManager.tileTypes[y][x] === 0) {
 				//This technically is a border, but isn't required for any of the border calculations
 				continue;
 			}
@@ -338,8 +349,17 @@ class PlayerTerritoryRenderer {
 
 	rerender() {
 		if (this.borderPath.length === 0) return;
-		console.log(this.borderPath, this.pathStatus)
 		this.territory.clear();
+		//let texture = playerManager.players[this.id].backgroundTexture, scaleW = (this.maxX - this.minX + 1) / texture.width * Math.sqrt(3) * 2, scaleH = (this.maxY - this.minY + 1) / texture.height * 3;
+		//let xOffset = 0, yOffset = 0, scale = 1;
+		//if (scaleW > scaleH) {
+		//	scale = scaleW;
+		//	yOffset = (scaleW - scaleH) * texture.height / 2;
+		//} else {
+		//	scale = scaleH;
+		//	xOffset = (scale - scaleW) * texture.width / 2;
+		//}
+		//this.territory.beginTextureFill({texture: texture, matrix: new Matrix(scale, 0, 0, scale, (this.minX * 2 + (this.minY & 1) - 1) * Math.sqrt(3) - xOffset, this.minY * 3 - 2 - yOffset)});
 		this.territory.beginFill(playerManager.players[this.id].color, 0.5);
 		this.territory.lineStyle(0.25, playerManager.players[this.id].color);
 		for (let i = 0; i < this.pathStatus.length; i++) {
