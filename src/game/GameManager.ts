@@ -2,15 +2,21 @@ import {GameMapRendererManager} from "../render/GameMapRendererManager";
 import {BasicMapNavigationHandler} from "./BasicMapNavigationHandler";
 import {GridOutlineRenderer} from "../render/GridOutlineRenderer";
 import {TileInteractionManager} from "./TileInteractionManager";
-import {PlayerManager} from "./PlayerManager";
+import {PlayerManager} from "./player/PlayerManager";
 import {TerritoryManager} from "./TerritoryManager";
+import {Random} from "../math/Random";
+import {SpawnManager} from "./player/SpawnManager";
+import {OffsetCoordinate} from "../math/OffsetCoordinate";
+import {gameManager} from "../main";
 
+export const random = new Random();
 export const gameMapRendererManager = new GameMapRendererManager();
 export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
 export const tileInteractionHandler = new TileInteractionManager();
 export const territoryManager = new TerritoryManager();
 export const playerManager = new PlayerManager();
+export const spawnManager = new SpawnManager();
 
 export class GameManager {
 	tileTypes: number[][];
@@ -16788,9 +16794,9 @@ export class GameManager {
 			2,
 			2
 		].reduce((resultArray, item, index) => {
-			const chunkIndex = Math.floor(index/128)
+			const chunkIndex = Math.floor(index / 128)
 
-			if(!resultArray[chunkIndex]) {
+			if (!resultArray[chunkIndex]) {
 				resultArray[chunkIndex] = [] // start a new chunk
 			}
 
@@ -16798,13 +16804,44 @@ export class GameManager {
 
 			return resultArray
 		}, []);
-		gameMapRendererManager.loadMap(this.tileTypes);
 		this.width = 128;
 		this.height = 131;
+		random.init(Math.floor(Math.random() * 2 ** 32));
+		gameMapRendererManager.loadMap(this.tileTypes);
+		spawnManager.init();
+		playerManager.init(Math.min(spawnManager.botSpawns.length, 128) - 1);
 		territoryManager.init();
 		gridOutlineRenderer.init();
 		basicMapNavigationHandler.enable();
 		tileInteractionHandler.enable();
+
+		for (const player of playerManager.players) {
+			spawnManager.randomSpawn(player);
+		}
+		setTimeout(() => {
+			territoryManager.orderRerender();
+		}, 2000);
+		setTimeout(() => {
+			setInterval(() => {
+				for (const player of playerManager.players) {
+					let attacked = [];
+					for (const hex of territoryManager.territory[player.id].borderTiles) {
+						new OffsetCoordinate(hex[0], hex[1]).onNeighbors((x, y) => {
+							if (!attacked.some((e) => e[0] === x && e[1] === y) && territoryManager.owner[y][x] === undefined && gameManager.tileTypes[y][x] !== 0) {
+								attacked.push([x, y]);
+							}
+						});
+					}
+					for (let i = 0; i < 5; i++) {
+						if (attacked.length === 0) break;
+						let index = random.random_int(attacked.length);
+						territoryManager.conquer(attacked[index][0], attacked[index][1], player.id);
+						attacked.splice(index, 1);
+					}
+				}
+				territoryManager.orderRerender();
+			}, 200);
+		}, 4000);
 	}
 
 	endGameScreen() {
