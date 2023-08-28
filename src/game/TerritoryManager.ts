@@ -1,11 +1,12 @@
 import {gameManager} from "../main";
 import {gameMapRendererManager, playerManager, territoryManager} from "./GameManager";
-import {Container, Graphics, Matrix} from "pixi.js";
+import {BitmapText, Container, Graphics} from "pixi.js";
 import {OffsetCoordinate} from "../math/OffsetCoordinate";
 import {AxialCoordinate} from "../math/AxialCoordinate";
 
 export class TerritoryManager {
 	container: Container;
+	nameContainer: Container;
 	owner: number[][];
 	territory: PlayerTerritoryRenderer[] = [];
 
@@ -14,6 +15,7 @@ export class TerritoryManager {
 
 		this.container = new Container();
 		gameMapRendererManager.container.addChild(this.container);
+		this.nameContainer = new Container();
 		for (let i = 0; i < playerManager.players.length; i++) {
 			this.territory[i] = new PlayerTerritoryRenderer(i);
 		}
@@ -47,6 +49,10 @@ export class TerritoryManager {
 class PlayerTerritoryRenderer {
 	id: number;
 	territory: Graphics;
+	name: BitmapText;
+	nameLength: number;
+	troops: BitmapText;
+	troopLength: number;
 	tiles: number[][] = [];
 	borderTiles: number[][] = [];
 	borderPath: number[][] = [];
@@ -55,21 +61,34 @@ class PlayerTerritoryRenderer {
 	maxX: number = -Infinity;
 	minY: number = Infinity;
 	maxY: number = -Infinity;
+	territoryChanged: boolean = false;
+	positionChanged: boolean = false;
 
 	constructor(id: number) {
 		this.id = id;
 		this.territory = new Graphics();
 		territoryManager.container.addChild(this.territory);
+		this.name = new BitmapText(playerManager.players[id].name, {fontName: "Calcutta-Medium", fontSize: 1});
+		console.log(playerManager.players[id].name, this.name.width);
+		this.nameLength = 2 / Math.max(3, this.name.width);
+		this.name.anchor.set(0.5, 1.1);
+		territoryManager.nameContainer.addChild(this.name);
+		this.troops = new BitmapText("0.", {fontName: "Calcutta-Medium", fontSize: 1});
+		this.troopLength = 2 / this.troops.width;
+		this.troops.anchor.set(0.5, 0);
+		territoryManager.nameContainer.addChild(this.troops);
 	}
 
 	addTile(hex: OffsetCoordinate) {
+		this.territoryChanged = true;
 		this.tiles.push([hex.x, hex.y]);
 		this.checkBorder(hex.x, hex.y);
 		hex.onNeighbors((x, y) => {
 			this.checkBorder(x, y);
 		});
-		this.minX = Math.min(this.minX, hex.x);
-		this.maxX = Math.max(this.maxX, hex.x);
+
+		this.minX = Math.min(this.minX, hex.x + 0.5 * (hex.y % 2) - 0.5);
+		this.maxX = Math.max(this.maxX, hex.x + 0.5 * (hex.y % 2) + 0.5);
 		this.minY = Math.min(this.minY, hex.y);
 		this.maxY = Math.max(this.maxY, hex.y);
 
@@ -269,6 +288,7 @@ class PlayerTerritoryRenderer {
 	}
 
 	removeTile(hex: OffsetCoordinate) {
+		this.territoryChanged = true;
 		this.tiles.splice(this.tiles.findIndex((e) => e[0] === hex.x && e[1] === hex.y), 1);
 		if (this.borderTiles.some((e) => e[0] === hex.x && e[1] === hex.y)) {
 			this.borderTiles.splice(this.borderTiles.findIndex((e) => e[0] === hex.x && e[1] === hex.y), 1);
@@ -276,16 +296,17 @@ class PlayerTerritoryRenderer {
 		hex.onNeighbors((x, y) => {
 			this.checkBorder(x, y);
 		});
-		if (hex.x === this.minX) {
+		let normalX = hex.x + 0.5 * (hex.y % 2);
+		if (normalX - 0.5 === this.minX) {
 			this.minX = Infinity;
 			for (let tile of this.tiles) {
-				this.minX = Math.min(this.minX, tile[0]);
+				this.minX = Math.min(this.minX, tile[0] + 0.5 * (tile[1] % 2) - 0.5);
 			}
 		}
-		if (hex.x === this.maxX) {
+		if (normalX + 0.5 === this.maxX) {
 			this.maxX = -Infinity;
 			for (let tile of this.tiles) {
-				this.maxX = Math.max(this.maxX, tile[0]);
+				this.maxX = Math.max(this.maxX, tile[0] + 0.5 * (tile[1] % 2) + 0.5);
 			}
 		}
 		if (hex.y === this.minY) {
@@ -347,35 +368,125 @@ class PlayerTerritoryRenderer {
 		}
 	}
 
-	rerender() {
-		if (this.borderPath.length === 0) return;
-		this.territory.clear();
-		//let texture = playerManager.players[this.id].backgroundTexture, scaleW = (this.maxX - this.minX + 1) / texture.width * Math.sqrt(3) * 2, scaleH = (this.maxY - this.minY + 1) / texture.height * 3;
-		//let xOffset = 0, yOffset = 0, scale = 1;
-		//if (scaleW > scaleH) {
-		//	scale = scaleW;
-		//	yOffset = (scaleW - scaleH) * texture.height / 2;
-		//} else {
-		//	scale = scaleH;
-		//	xOffset = (scale - scaleW) * texture.width / 2;
-		//}
-		//this.territory.beginTextureFill({texture: texture, matrix: new Matrix(scale, 0, 0, scale, (this.minX * 2 + (this.minY & 1) - 1) * Math.sqrt(3) - xOffset, this.minY * 3 - 2 - yOffset)});
-		this.territory.beginFill(playerManager.players[this.id].color, 0.5);
-		this.territory.lineStyle(0.25, playerManager.players[this.id].color);
-		for (let i = 0; i < this.pathStatus.length; i++) {
-			this.territory.drawPolygon(this.borderPath[this.pathStatus[i][0]]);
-			for (let j = 1; j < this.pathStatus[i].length; j++) {
-				this.territory.beginHole();
-				this.territory.drawPolygon(this.borderPath[this.pathStatus[i][j]]);
-				this.territory.endHole();
+	lastPosition: number[] = [-1, -1, -1];
+
+	calculateNamePosition() {
+		let histogram = [];
+		if (this.minY % 2 === 0) {
+			for (let x = this.minX; x <= this.maxX; x += 0.5) {
+				let floor = Math.floor(x);
+				histogram[2 * x] = (floor === x ? territoryManager.owner[this.minY][x] === this.id : territoryManager.owner[this.minY][floor] === this.id || territoryManager.owner[this.minY][floor + 1] === this.id) ? 1 : 0;
+			}
+		} else {
+			for (let x = this.minX; x <= this.maxX; x += 0.5) {
+				let floor = Math.floor(x);
+				histogram[2 * x] = (floor === x ? territoryManager.owner[this.minY][floor] === this.id || territoryManager.owner[this.minY][floor - 1] === this.id : territoryManager.owner[this.minY][floor] === this.id) ? 1 : 0;
 			}
 		}
-		this.territory.endFill();
+		let first = this.findLargestRectangle(histogram);
+		let max = [first[0], first[1], first[2], this.minY, first[3]];
+		for (let y = this.minY + 1; y <= this.maxY; y++) {
+			if (y % 2 === 0) {
+				for (let x = this.minX; x <= this.maxX; x += 0.5) {
+					let floor = Math.floor(x);
+					histogram[2 * x] = (floor === x ? territoryManager.owner[y][floor] === this.id : territoryManager.owner[y][floor] === this.id || territoryManager.owner[y][floor + 1] === this.id) ? histogram[2 * x] + 1 : 0;
+				}
+			} else {
+				for (let x = this.minX; x <= this.maxX; x += 0.5) {
+					let floor = Math.floor(x);
+					histogram[2 * x] = (floor === x ? territoryManager.owner[y][floor] === this.id || territoryManager.owner[y][floor - 1] === this.id : territoryManager.owner[y][floor] === this.id) ? histogram[2 * x] + 1 : 0;
+				}
+			}
+			let current = this.findLargestRectangle(histogram);
+			if (current[0] > max[0] || (current[0] === max[0] && current[3] > max[4])) {
+				max = [current[0], current[1], current[2], y, current[3]];
+			}
+		}
+
+		if (this.lastPosition[0] !== max[1] || this.lastPosition[1] !== max[3]) {
+			this.lastPosition = [max[1], max[3], max[2]];
+			let x = (2 * max[1] + max[2]) * Math.sqrt(3), y = max[3] * 3 - (max[4] - 1) * 3 / 2;
+			this.name.fontSize = this.nameLength * max[2];
+			this.name.position.set(x, y);
+			this.troops.fontSize = this.troopLength * max[2] / Math.max(3, this.troops.text.length);
+			this.troops.position.set(x, y);
+		}
+	}
+
+	findLargestRectangle(histogram: number[]) {
+		let stack = [];
+		let top = () => stack[stack.length - 1];
+		let max = 0, maxData = [], pos = this.minX;
+		for (; pos < this.maxX; pos += 0.5) {
+			let start = pos, height = histogram[2 * pos];
+			while (true) {
+				if (stack.length === 0 || height > top()[1]) {
+					stack.push([start, height]); // push
+				} else if (stack.length > 0 && height < top()[1]) {
+					let size = Math.min(top()[1], pos - top()[0] - 0.5) * Math.min(pos - top()[0] - 0.5, top()[1] * 5);
+					if (max < size || (max === size && maxData[2] < top()[1])) {
+						max = size;
+						maxData = [top()[0], pos - 0.5, top()[1]];
+					}
+					start = stack.pop()[0];
+					continue;
+				}
+				break;
+			}
+		}
+
+		for (let [start, height] of stack) {
+			let size = Math.min(height, pos - start) * Math.min(pos - start, height * 5);
+			if (max < size || (max === size && maxData[2] < height)) {
+				max = size;
+				maxData = [start, pos - 0.5, height];
+			}
+		}
+
+		return [max, maxData[0], maxData[1] - maxData[0], maxData[2]];
+	}
+
+	rerender() {
+		if (this.borderPath.length === 0) return;
+		if (this.territoryChanged) {
+			this.territory.clear();
+			//let texture = playerManager.players[this.id].backgroundTexture, scaleW = (this.maxX - this.minX + 1) / texture.width * Math.sqrt(3) * 2, scaleH = (this.maxY - this.minY + 1) / texture.height * 3;
+			//let xOffset = 0, yOffset = 0, scale = 1;
+			//if (scaleW > scaleH) {
+			//	scale = scaleW;
+			//	yOffset = (scaleW - scaleH) * texture.height / 2;
+			//} else {
+			//	scale = scaleH;
+			//	xOffset = (scale - scaleW) * texture.width / 2;
+			//}
+			//this.territory.beginTextureFill({texture: texture, matrix: new Matrix(scale, 0, 0, scale, (this.minX * 2 + (this.minY & 1) - 1) * Math.sqrt(3) - xOffset, this.minY * 3 - 2 - yOffset)});
+			this.territory.beginFill(playerManager.players[this.id].color, 0.5);
+			this.territory.lineStyle(0.25, playerManager.players[this.id].color);
+			for (let i = 0; i < this.pathStatus.length; i++) {
+				this.territory.drawPolygon(this.borderPath[this.pathStatus[i][0]]);
+				for (let j = 1; j < this.pathStatus[i].length; j++) {
+					this.territory.beginHole();
+					this.territory.drawPolygon(this.borderPath[this.pathStatus[i][j]]);
+					this.territory.endHole();
+				}
+			}
+			this.territory.endFill();
+			this.calculateNamePosition();
+		}
+
+		if (playerManager.players[this.id].troops.toString() !== this.troops.text) {
+			this.troops.text = playerManager.players[this.id].troops.toString();
+			this.troops.fontSize = this.troopLength * this.lastPosition[2] / Math.max(3, this.troops.text.length);
+		}
 	}
 
 	destroy() {
 		this.territory.destroy();
 		this.territory = undefined;
+		this.name.destroy();
+		this.name = undefined;
+		this.troops.destroy();
+		this.troops = undefined;
 	}
 }
 

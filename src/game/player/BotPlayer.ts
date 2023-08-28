@@ -6,6 +6,7 @@ export class BotPlayer implements IPlayer {
 	id: number;
 	color: number;
 	name: string;
+	troops: number;
 	backgroundTexture: Texture;
 
 	constructor() {
@@ -21,6 +22,7 @@ export class BotPlayer implements IPlayer {
 		g += brightness;
 		b += brightness;
 		this.color = r << 16 | g << 8 | b;
+		this.troops = 1000;
 		let country = Object.keys(playerManager.freeBotNames)[random.random_int(Object.keys(playerManager.freeBotNames).length)];
 		this.name = playerManager.freeBotNames[country];
 		delete playerManager.freeBotNames[country];

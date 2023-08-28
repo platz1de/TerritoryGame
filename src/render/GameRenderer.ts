@@ -1,9 +1,10 @@
-import {Application, Graphics} from "pixi.js"
+import {Application, Graphics, settings} from "pixi.js"
 
 export class GameRenderer {
 	app: Application<HTMLCanvasElement>;
 
 	constructor() {
+		settings.ROUND_PIXELS = true;
 		this.app = new Application<HTMLCanvasElement>({
 			resizeTo: window,
 			eventMode: "passive",

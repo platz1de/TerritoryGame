@@ -43,6 +43,11 @@ export class SpawnManager {
 		let spawn = this.botSpawns[index];
 		this.botSpawns.splice(index, 1);
 		territoryManager.conquer(spawn.x, spawn.y, player.id);
+		spawn.onNeighbors((x, y) => {
+			if (x >= 0 && y >= 0 && x < gameManager.width && y < gameManager.height && gameManager.tileTypes[y][x] !== 0 && territoryManager.owner[y][x] === undefined) {
+				territoryManager.conquer(x, y, player.id);
+			}
+		});
 		return spawn;
 	}
 }

@@ -16818,9 +16818,8 @@ export class GameManager {
 		for (const player of playerManager.players) {
 			spawnManager.randomSpawn(player);
 		}
-		setTimeout(() => {
-			territoryManager.orderRerender();
-		}, 2000);
+		territoryManager.orderRerender();
+		gameMapRendererManager.container.addChild(territoryManager.nameContainer);
 		setTimeout(() => {
 			setInterval(() => {
 				for (const player of playerManager.players) {
