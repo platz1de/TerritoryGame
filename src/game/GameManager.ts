@@ -6,8 +6,9 @@ import {PlayerManager} from "./player/PlayerManager";
 import {TerritoryManager} from "./TerritoryManager";
 import {Random} from "../math/Random";
 import {SpawnManager} from "./player/SpawnManager";
-import {OffsetCoordinate} from "../math/OffsetCoordinate";
-import {gameManager} from "../main";
+import {GameTickingManager} from "./GameTickingManager";
+import {TileActionInterface} from "./ui/TileActionInterface";
+import {HumanPlayer} from "./player/HumanPlayer";
 
 export const random = new Random();
 export const gameMapRendererManager = new GameMapRendererManager();
@@ -15,13 +16,18 @@ export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
 export const tileInteractionHandler = new TileInteractionManager();
 export const territoryManager = new TerritoryManager();
+
+export const tileActionInterface = new TileActionInterface();
+
 export const playerManager = new PlayerManager();
 export const spawnManager = new SpawnManager();
+export const gameTickingManager = new GameTickingManager();
 
 export class GameManager {
 	tileTypes: number[][];
 	width: number;
 	height: number;
+	localPlayer: number = 0;
 
 	startGameScreen() {
 		this.tileTypes = [
@@ -16817,33 +16823,7 @@ export class GameManager {
 
 		basicMapNavigationHandler.enable();
 		tileInteractionHandler.enable();
-
-		for (const player of playerManager.players) {
-			spawnManager.randomSpawn(player);
-		}
-		territoryManager.orderRerender();
-		gameMapRendererManager.container.addChild(territoryManager.nameContainer);
-		setTimeout(() => {
-			setInterval(() => {
-				for (const player of playerManager.players) {
-					let attacked = [];
-					for (const hex of territoryManager.territory[player.id].borderTiles) {
-						new OffsetCoordinate(hex[0], hex[1]).onNeighbors((x, y) => {
-							if (!attacked.some((e) => e[0] === x && e[1] === y) && territoryManager.owner[y][x] === undefined && gameManager.tileTypes[y][x] !== 0) {
-								attacked.push([x, y]);
-							}
-						});
-					}
-					for (let i = 0; i < 5; i++) {
-						if (attacked.length === 0) break;
-						let index = random.random_int(attacked.length);
-						territoryManager.conquer(attacked[index][0], attacked[index][1], player.id);
-						attacked.splice(index, 1);
-					}
-				}
-				territoryManager.orderRerender();
-			}, 200);
-		}, 4000);
+		gameTickingManager.enable();
 	}
 
 	endGameScreen() {

@@ -9,6 +9,8 @@ export const interactionManager = new InteractionManager();
 export const eventManager = new EventManager();
 export const gameManager = new GameManager();
 
-Assets.load("dist/Calcutta-Medium.fnt").then(() => {
-	gameManager.startGameScreen()
+Assets.init({manifest: "dist/assets.json"}).then(() => {
+	Assets.loadBundle("game").then(() => {
+		gameManager.startGameScreen()
+	});
 });
