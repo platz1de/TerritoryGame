@@ -88,7 +88,6 @@ export class InteractionManager {
 	}
 
 	onScroll(e: FederatedWheelEvent) {
-		e.preventDefault();
 		for (let listener of interactionManager.scrollListeners) {
 			if (listener.testScroll(e.x, e.y)) {
 				listener.onScroll(e.x, e.y, e.deltaY);

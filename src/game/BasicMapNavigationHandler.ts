@@ -12,12 +12,11 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 	dragY: number = 0;
 
 	enable() {
-		let minXZoom = renderer.app.view.width / gameMapRendererManager.container.width, minYZoom = renderer.app.view.height / gameMapRendererManager.container.height;
+		let minXZoom = renderer.app.view.width / gameMapRendererManager.containerWidth, minYZoom = renderer.app.view.height / gameMapRendererManager.containerHeight;
 		this.zoom = 0.9 * Math.min(minXZoom, minYZoom);
-		gameMapRendererManager.container.scale.set(this.zoom, this.zoom);
-		this.x = (renderer.app.view.width - gameMapRendererManager.container.width) / 2;
-		this.y = (renderer.app.view.height - gameMapRendererManager.container.height) / 2;
-		gameMapRendererManager.container.position.set(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom);
+		this.x = (renderer.app.view.width - gameMapRendererManager.containerWidth * this.zoom) / 2;
+		this.y = (renderer.app.view.height - gameMapRendererManager.containerHeight * this.zoom) / 2;
+		gameMapRendererManager.container.setTransform(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom, this.zoom, this.zoom);
 		interactionRegistry.registerDragHandler(this);
 		interactionRegistry.registerScrollHandler(this);
 	}
@@ -32,8 +31,8 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		this.zoom -= Math.max(-1, Math.min(1, delta)) * 0.3 * this.zoom;
 		this.zoom = Math.max(0.5, Math.min(1000, this.zoom));
 		gameMapRendererManager.container.scale.set(this.zoom, this.zoom);
-		this.x = Math.max(Math.min(-mapX * this.zoom + x, 9 * renderer.app.view.width / 10), -gameMapRendererManager.container.width + renderer.app.view.width / 10);
-		this.y = Math.max(Math.min(-mapY * this.zoom + y, 9 * renderer.app.view.height / 10), -gameMapRendererManager.container.height + renderer.app.view.height / 10);
+		this.x = Math.max(Math.min(-mapX * this.zoom + x, 9 * renderer.app.view.width / 10), renderer.app.view.width / 10 - gameMapRendererManager.containerWidth * this.zoom);
+		this.y = Math.max(Math.min(-mapY * this.zoom + y, 9 * renderer.app.view.height / 10), renderer.app.view.height / 10 - gameMapRendererManager.containerHeight * this.zoom);
 		gameMapRendererManager.container.position.set(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom);
 		eventManager.onMapMove();
 		eventManager.onScroll();
@@ -59,8 +58,8 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 	}
 
 	onDragMove(x: number, y: number): void {
-		this.x = Math.max(Math.min(this.x + x - this.dragX, 9 * renderer.app.view.width / 10), -gameMapRendererManager.container.width + renderer.app.view.width / 10);
-		this.y = Math.max(Math.min(this.y + y - this.dragY, 9 * renderer.app.view.height / 10), -gameMapRendererManager.container.height + renderer.app.view.height / 10);
+		this.x = Math.max(Math.min(this.x + x - this.dragX, 9 * renderer.app.view.width / 10), renderer.app.view.width / 10 - gameMapRendererManager.containerWidth * this.zoom);
+		this.y = Math.max(Math.min(this.y + y - this.dragY, 9 * renderer.app.view.height / 10), renderer.app.view.height / 10 - gameMapRendererManager.containerHeight * this.zoom);
 		this.dragX = x;
 		this.dragY = y;
 		gameMapRendererManager.container.position.set(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom);

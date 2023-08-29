@@ -8,6 +8,8 @@ export class GameMapRendererManager {
 	container: Container;
 	rows: Graphics[] = [];
 	terrainMask: Graphics;
+	containerWidth: number;
+	containerHeight: number;
 
 	loadMap(data: number[][]) {
 		this.container = new Container();
@@ -29,6 +31,8 @@ export class GameMapRendererManager {
 		}
 		this.terrainMask.endFill();
 		this.container.addChild(this.terrainMask);
+		this.containerWidth = this.terrainMask.width;
+		this.containerHeight = this.terrainMask.height;
 	}
 
 	destroy() {

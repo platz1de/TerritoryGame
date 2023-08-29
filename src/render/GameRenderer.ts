@@ -14,7 +14,7 @@ export class GameRenderer {
 				click: true,
 				wheel: true,
 			},
-			antialias: true,
+			antialias: false,
 			backgroundColor: 0x555555
 		});
 		document.body.appendChild(this.app.view);

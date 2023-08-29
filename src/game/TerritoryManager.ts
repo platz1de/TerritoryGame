@@ -406,9 +406,9 @@ class PlayerTerritoryRenderer {
 		if (this.lastPosition[0] !== max[1] || this.lastPosition[1] !== max[3]) {
 			this.lastPosition = [max[1], max[3], max[2]];
 			let x = (2 * max[1] + max[2]) * Math.sqrt(3), y = max[3] * 3 - (max[4] - 1) * 3 / 2;
-			this.name.fontSize = this.nameLength * max[2];
+			this.name.fontSize = Math.floor(this.nameLength * max[2]);
 			this.name.position.set(x, y);
-			this.troops.fontSize = this.troopLength * max[2] / Math.max(3, this.troops.text.length);
+			this.troops.fontSize = Math.floor(this.troopLength * max[2] / Math.max(3, this.troops.text.length));
 			this.troops.position.set(x, y);
 		}
 	}
