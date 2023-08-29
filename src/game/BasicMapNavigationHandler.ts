@@ -16,7 +16,7 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		this.zoom = 0.9 * Math.min(minXZoom, minYZoom);
 		this.x = (renderer.app.view.width - gameMapRendererManager.containerWidth * this.zoom) / 2;
 		this.y = (renderer.app.view.height - gameMapRendererManager.containerHeight * this.zoom) / 2;
-		gameMapRendererManager.container.setTransform(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom, this.zoom, this.zoom);
+		gameMapRendererManager.container.setTransform(this.x, this.y, this.zoom, this.zoom);
 		interactionRegistry.registerDragHandler(this);
 		interactionRegistry.registerScrollHandler(this);
 	}
@@ -33,7 +33,7 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		gameMapRendererManager.container.scale.set(this.zoom, this.zoom);
 		this.x = Math.max(Math.min(-mapX * this.zoom + x, 9 * renderer.app.view.width / 10), renderer.app.view.width / 10 - gameMapRendererManager.containerWidth * this.zoom);
 		this.y = Math.max(Math.min(-mapY * this.zoom + y, 9 * renderer.app.view.height / 10), renderer.app.view.height / 10 - gameMapRendererManager.containerHeight * this.zoom);
-		gameMapRendererManager.container.position.set(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom);
+		gameMapRendererManager.container.position.set(this.x, this.y);
 		eventManager.onMapMove();
 		eventManager.onScroll();
 	}
@@ -62,7 +62,7 @@ export class BasicMapNavigationHandler implements ScrollInteractionHandler, Drag
 		this.y = Math.max(Math.min(this.y + y - this.dragY, 9 * renderer.app.view.height / 10), renderer.app.view.height / 10 - gameMapRendererManager.containerHeight * this.zoom);
 		this.dragX = x;
 		this.dragY = y;
-		gameMapRendererManager.container.position.set(this.x + Math.sqrt(3) * this.zoom, this.y + 2 * this.zoom);
+		gameMapRendererManager.container.position.set(this.x, this.y);
 		eventManager.onMapMove();
 	}
 
