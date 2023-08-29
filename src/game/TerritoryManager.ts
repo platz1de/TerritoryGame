@@ -76,7 +76,6 @@ class PlayerTerritoryRenderer {
 		this.territory = new Graphics();
 		territoryManager.container.addChild(this.territory);
 		this.name = new BitmapText(playerManager.players[id].name, {fontName: "Calcutta-Medium", fontSize: 1});
-		console.log(playerManager.players[id].name, this.name.width);
 		this.nameLength = 2 / Math.max(3, this.name.width);
 		this.name.anchor.set(0.5, 1.1);
 		territoryManager.nameContainer.addChild(this.name);
@@ -413,9 +412,9 @@ class PlayerTerritoryRenderer {
 		if (this.lastPosition[0] !== max[1] || this.lastPosition[1] !== max[3]) {
 			this.lastPosition = [max[1], max[3], max[2]];
 			let x = (2 * max[1] + max[2]) * Math.sqrt(3), y = max[3] * 3 - (max[4] - 1) * 3 / 2;
-			this.name.fontSize = Math.floor(this.nameLength * max[2]);
+			this.name.fontSize = Math.max(1, Math.floor(this.nameLength * max[2]));
 			this.name.position.set(x, y);
-			this.troops.fontSize = Math.floor(this.troopLength * max[2] / Math.max(3, this.troops.text.length));
+			this.troops.fontSize = Math.max(1, Math.floor(this.troopLength * max[2] / Math.max(3, this.troops.text.length)));
 			this.troops.position.set(x, y);
 		}
 	}
@@ -424,7 +423,7 @@ class PlayerTerritoryRenderer {
 		let stack = [];
 		let top = () => stack[stack.length - 1];
 		let max = 0, maxData = [], pos = this.minX;
-		for (; pos < this.maxX; pos += 0.5) {
+		for (; pos <= this.maxX; pos += 0.5) {
 			let start = pos, height = histogram[2 * pos];
 			while (true) {
 				if (stack.length === 0 || height > top()[1]) {
@@ -441,12 +440,13 @@ class PlayerTerritoryRenderer {
 				break;
 			}
 		}
+		pos -= 0.5;
 
 		for (let [start, height] of stack) {
 			let size = Math.min(height, pos - start) * Math.min(pos - start, height * 5);
 			if (max < size || (max === size && maxData[2] < height)) {
 				max = size;
-				maxData = [start, pos - 0.5, height];
+				maxData = [start, pos, height];
 			}
 		}
 
