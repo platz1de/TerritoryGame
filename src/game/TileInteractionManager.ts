@@ -1,6 +1,6 @@
 import {interactionRegistry} from "../interaction/InteractionManager";
 import {ClickInteractionHandler} from "../interaction/InteractionHandlerTypes";
-import {basicMapNavigationHandler, gameMapRendererManager} from "./GameManager";
+import {basicMapNavigationHandler, gameMapRendererManager, tileActionInterface} from "./GameManager";
 import {gameManager} from "../main";
 import {OffsetCoordinate} from "../math/OffsetCoordinate";
 import {Graphics} from "pixi.js";
@@ -45,11 +45,13 @@ export class TileInteractionManager implements ClickInteractionHandler {
 		this.selectedTile = basicMapNavigationHandler.getHexTileAt(x, y).toOffset();
 		this.outline.position.set(this.selectedTile.getCenterX(), this.selectedTile.getCenterY());
 		this.outline.alpha = 1;
+		tileActionInterface.open(this.selectedTile);
 	}
 
 	testClick(x: number, y: number): boolean {
 		this.selectedTile = null;
 		this.outline.alpha = 0;
+		tileActionInterface.close();
 		if (!basicMapNavigationHandler.isInMap(x, y)) return false;
 		let hex = basicMapNavigationHandler.getHexTileAt(x, y).toOffset();
 		return gameManager.tileTypes[hex.y][hex.x] !== 0;

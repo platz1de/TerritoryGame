@@ -16809,9 +16809,12 @@ export class GameManager {
 		random.init(Math.floor(Math.random() * 2 ** 32));
 		gameMapRendererManager.loadMap(this.tileTypes);
 		spawnManager.init();
-		playerManager.init(Math.min(spawnManager.botSpawns.length, 128) - 1);
+		playerManager.init([new HumanPlayer("Player")], Math.min(spawnManager.botSpawns.length, 128));
 		territoryManager.init();
+
 		gridOutlineRenderer.init();
+		tileActionInterface.init();
+
 		basicMapNavigationHandler.enable();
 		tileInteractionHandler.enable();
 
@@ -16848,6 +16851,7 @@ export class GameManager {
 		territoryManager.destroy();
 		playerManager.destroy();
 		gridOutlineRenderer.destroy();
+		tileActionInterface.destroy();
 		basicMapNavigationHandler.disable();
 		tileInteractionHandler.disable();
 	}

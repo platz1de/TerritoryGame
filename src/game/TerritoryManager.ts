@@ -29,6 +29,13 @@ export class TerritoryManager {
 		this.territory[owner].addTile(new OffsetCoordinate(x, y));
 	}
 
+	free(x: number, y: number) {
+		if (this.owner[y][x] !== undefined) {
+			this.territory[this.owner[y][x]].removeTile(new OffsetCoordinate(x, y));
+		}
+		this.owner[y][x] = undefined;
+	}
+
 	orderRerender() {
 		for (let i = 0; i < this.territory.length; i++) {
 			this.territory[i].rerender();
