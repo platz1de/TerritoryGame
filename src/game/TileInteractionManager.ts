@@ -32,7 +32,7 @@ export class TileInteractionManager implements ClickInteractionHandler {
 		this.outline.lineTo(-Math.sqrt(3) - 0.125, 0.5);
 		this.outline.endFill();
 		gameMapRendererManager.container.addChild(this.outline);
-		this.outline.alpha = 0;
+		this.outline.visible = false;
 
 		interactionRegistry.registerClickHandler(this);
 	}
@@ -44,13 +44,13 @@ export class TileInteractionManager implements ClickInteractionHandler {
 	onClick(x: number, y: number): void {
 		this.selectedTile = basicMapNavigationHandler.getHexTileAt(x, y).toOffset();
 		this.outline.position.set(this.selectedTile.getCenterX(), this.selectedTile.getCenterY());
-		this.outline.alpha = 1;
+		this.outline.visible = true;
 		tileActionInterface.open(this.selectedTile);
 	}
 
 	testClick(x: number, y: number): boolean {
 		this.selectedTile = null;
-		this.outline.alpha = 0;
+		this.outline.visible = false;
 		tileActionInterface.close();
 		if (!basicMapNavigationHandler.isInMap(x, y)) return false;
 		let hex = basicMapNavigationHandler.getHexTileAt(x, y).toOffset();

@@ -11,7 +11,7 @@ export class TerritoryManager {
 	territory: PlayerTerritoryRenderer[] = [];
 
 	init() {
-		this.owner = gameManager.tileTypes.map(row => row.map(() => undefined));
+		this.owner = gameManager.tileTypes.map(row => row.map((t) => t === 0 ? undefined : -1));
 
 		this.container = new Container();
 		gameMapRendererManager.container.addChild(this.container);
@@ -22,7 +22,7 @@ export class TerritoryManager {
 	}
 
 	conquer(x: number, y: number, owner: number) {
-		if (this.owner[y][x] !== undefined) {
+		if (this.owner[y][x] !== -1) {
 			this.territory[this.owner[y][x]].removeTile(new OffsetCoordinate(x, y));
 		}
 		this.owner[y][x] = owner;
@@ -30,10 +30,10 @@ export class TerritoryManager {
 	}
 
 	free(x: number, y: number) {
-		if (this.owner[y][x] !== undefined) {
+		if (this.owner[y][x] !== -1) {
 			this.territory[this.owner[y][x]].removeTile(new OffsetCoordinate(x, y));
 		}
-		this.owner[y][x] = undefined;
+		this.owner[y][x] = -1;
 	}
 
 	orderRerender() {
@@ -76,11 +76,11 @@ class PlayerTerritoryRenderer {
 		this.territory = new Graphics();
 		territoryManager.container.addChild(this.territory);
 		this.name = new BitmapText(playerManager.players[id].name, {fontName: "Calcutta-Medium", fontSize: 1});
-		this.nameLength = 2 / Math.max(3, this.name.width);
+		this.nameLength = 3 / Math.max(3, this.name.width);
 		this.name.anchor.set(0.5, 1.1);
 		territoryManager.nameContainer.addChild(this.name);
 		this.troops = new BitmapText("0.", {fontName: "Calcutta-Medium", fontSize: 1});
-		this.troopLength = 2 / this.troops.width;
+		this.troopLength = 4 / this.troops.width;
 		this.troops.anchor.set(0.5, 0);
 		territoryManager.nameContainer.addChild(this.troops);
 	}
@@ -349,6 +349,8 @@ class PlayerTerritoryRenderer {
 
 		if (this.borderPath.length === 0) {
 			this.territory.clear();
+			this.name.visible = false;
+			this.troops.visible = false;
 		}
 	}
 
@@ -410,11 +412,11 @@ class PlayerTerritoryRenderer {
 		}
 
 		if (this.lastPosition[0] !== max[1] || this.lastPosition[1] !== max[3]) {
-			this.lastPosition = [max[1], max[3], max[2]];
+			this.lastPosition = [max[1], max[3], max[2], max[4]];
 			let x = (2 * max[1] + max[2]) * Math.sqrt(3), y = max[3] * 3 - (max[4] - 1) * 3 / 2;
-			this.name.fontSize = Math.max(1, Math.floor(this.nameLength * max[2]));
+			this.name.fontSize = Math.min(this.nameLength * max[2], max[4]);
 			this.name.position.set(x, y);
-			this.troops.fontSize = Math.max(1, Math.floor(this.troopLength * max[2] / Math.max(3, this.troops.text.length)));
+			this.troops.fontSize = Math.min(this.troopLength * max[2] / Math.max(3, this.troops.text.length), max[4]);
 			this.troops.position.set(x, y);
 		}
 	}
@@ -456,6 +458,7 @@ class PlayerTerritoryRenderer {
 	rerender() {
 		if (this.borderPath.length === 0) return;
 		if (this.territoryChanged) {
+			this.territoryChanged = false;
 			this.territory.clear();
 			//let texture = playerManager.players[this.id].backgroundTexture, scaleW = (this.maxX - this.minX + 1) / texture.width * Math.sqrt(3) * 2, scaleH = (this.maxY - this.minY + 1) / texture.height * 3;
 			//let xOffset = 0, yOffset = 0, scale = 1;
@@ -483,7 +486,7 @@ class PlayerTerritoryRenderer {
 
 		if (playerManager.players[this.id].troops.toString() !== this.troops.text) {
 			this.troops.text = playerManager.players[this.id].troops.toString();
-			this.troops.fontSize = this.troopLength * this.lastPosition[2] / Math.max(3, this.troops.text.length);
+			this.troops.fontSize = Math.min(this.troopLength * this.lastPosition[2] / Math.max(3, this.troops.text.length), this.lastPosition[3]);
 		}
 	}
 

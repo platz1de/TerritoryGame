@@ -1,7 +1,7 @@
 import {Container, Graphics, SCALE_MODES, Sprite} from "pixi.js";
 import {gameManager, renderer} from "../../main";
 import {OffsetCoordinate} from "../../math/OffsetCoordinate";
-import {basicMapNavigationHandler, gameMapRendererManager, spawnManager, territoryManager, tileActionInterface, tileInteractionHandler} from "../GameManager";
+import {basicMapNavigationHandler, gameMapRendererManager, playerActionRelayManager, playerManager, spawnManager, territoryManager, tileActionInterface, tileInteractionHandler} from "../GameManager";
 import {GameResizeHandler, MapMoveHandler} from "../../event/EventHandlerTypes";
 import {eventRegistry} from "../../event/EventManager";
 import {ClickInteractionHandler, HoverInteractionHandler} from "../../interaction/InteractionHandlerTypes";
@@ -20,12 +20,14 @@ export class TileActionInterface implements MapMoveHandler, GameResizeHandler, H
 		renderer.app.stage.addChild(this.container);
 		this.container.alpha = 0;
 
-		createActionTile("attack", 0);
-		createActionTile("targeted_attack", 1);
-		createActionTile("donation", 2);
-		createActionTile("message", 3);
-		createActionTile("profile", 4);
-		createActionTile("boat", 5);
+		createActionTile(["attack", "select_spawn"], 0);
+		createActionTile(["targeted_attack"], 1);
+		createActionTile(["donation"], 2);
+		createActionTile(["message"], 3);
+		createActionTile(["profile"], 4);
+		createActionTile(["boat"], 5);
+
+		this.sprites[0].visible = false;
 
 		eventRegistry.registerMapMoveHandler(this);
 		eventRegistry.registerZoomHandler(this);
@@ -35,6 +37,15 @@ export class TileActionInterface implements MapMoveHandler, GameResizeHandler, H
 
 	open(hex: OffsetCoordinate) {
 		this.container.position.set(basicMapNavigationHandler.x + basicMapNavigationHandler.zoom * hex.getCenterX(), basicMapNavigationHandler.y + basicMapNavigationHandler.zoom * hex.getCenterY());
+
+		for (let i = 0; i < this.elements.length; i++) {
+			this.elements[i].visible = false;
+		}
+		if (spawnManager.inSpawnSelection) {
+			this.elements[0].visible = true;
+		} else {
+			this.elements[0].visible = true;
+		}
 
 		this.container.alpha = 1;
 		this.isOpen = true;
@@ -100,8 +111,13 @@ export class TileActionInterface implements MapMoveHandler, GameResizeHandler, H
 		}
 		switch (tile) {
 			case 0:
-				spawnManager.selectSpawn(gameManager.localPlayer, tileInteractionHandler.selectedTile.x, tileInteractionHandler.selectedTile.y);
-				territoryManager.orderRerender();
+				if (spawnManager.inSpawnSelection) {
+					spawnManager.selectSpawn(gameManager.localPlayer, tileInteractionHandler.selectedTile.x, tileInteractionHandler.selectedTile.y);
+					tileInteractionHandler.selectedTile = null;
+					tileInteractionHandler.outline.visible = false;
+				} else {
+					playerActionRelayManager.simpleAttack(gameManager.localPlayer, territoryManager.owner[tileInteractionHandler.selectedTile.y][tileInteractionHandler.selectedTile.x], 0.3);
+				}
 				break;
 			case 1:
 				break;
@@ -151,14 +167,16 @@ export class TileActionInterface implements MapMoveHandler, GameResizeHandler, H
 	}
 }
 
-function createActionTile(name: string, position: number) {
+function createActionTile(sprites: string[], position: number) {
 	let tile = new Graphics();
-	let sprite = Sprite.from(name);
-	sprite.texture.baseTexture.scaleMode = SCALE_MODES.NEAREST;
-	sprite.anchor.set(0.5);
-	sprite.scale.set(2);
-	tile.addChild(sprite);
-	tileActionInterface.sprites.push(sprite);
+	for (let name of sprites) {
+		let sprite = Sprite.from(name);
+		sprite.texture.baseTexture.scaleMode = SCALE_MODES.NEAREST;
+		sprite.anchor.set(0.5);
+		sprite.scale.set(2);
+		tile.addChild(sprite);
+		tileActionInterface.sprites.push(sprite);
+	}
 	tile.beginFill(0xffaa00);
 	tile.lineStyle(1, 0x000000);
 	tile.drawPolygon([

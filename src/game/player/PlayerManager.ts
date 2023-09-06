@@ -1,15 +1,14 @@
-import {IPlayer} from "./IPlayer";
+import {BasePlayer} from "./BasePlayer";
 import {BotPlayer} from "./BotPlayer";
 import {HumanPlayer} from "./HumanPlayer";
 
 export class PlayerManager {
-	id: number;
-	players: IPlayer[];
+	id: number = 0;
+	players: BasePlayer[];
 	freeBotNames: { [key: string]: string };
 	humanOffset: number = 0;
 
 	init(players: HumanPlayer[], botCount: number) {
-		this.id = 0;
 		this.players = players;
 		this.humanOffset = players.length;
 		this.freeBotNames = {
@@ -23,5 +22,6 @@ export class PlayerManager {
 
 	destroy() {
 		this.players = [];
+		this.id = 0;
 	}
 }

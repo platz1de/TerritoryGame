@@ -9,6 +9,7 @@ import {SpawnManager} from "./player/SpawnManager";
 import {GameTickingManager} from "./GameTickingManager";
 import {TileActionInterface} from "./ui/TileActionInterface";
 import {HumanPlayer} from "./player/HumanPlayer";
+import {PlayerActionRelayManager} from "./player/PlayerActionRelayManager";
 
 export const random = new Random();
 export const gameMapRendererManager = new GameMapRendererManager();
@@ -16,6 +17,7 @@ export const gridOutlineRenderer = new GridOutlineRenderer();
 export const basicMapNavigationHandler = new BasicMapNavigationHandler();
 export const tileInteractionHandler = new TileInteractionManager();
 export const territoryManager = new TerritoryManager();
+export const playerActionRelayManager = new PlayerActionRelayManager();
 
 export const tileActionInterface = new TileActionInterface();
 
@@ -28,6 +30,7 @@ export class GameManager {
 	width: number;
 	height: number;
 	localPlayer: number = 0;
+	isLocalGame: boolean = true;
 
 	startGameScreen() {
 		this.tileTypes = [
@@ -16815,15 +16818,15 @@ export class GameManager {
 		random.init(Math.floor(Math.random() * 2 ** 32));
 		gameMapRendererManager.loadMap(this.tileTypes);
 		spawnManager.init();
-		playerManager.init([new HumanPlayer("Player")], Math.min(spawnManager.botSpawns.length, 128));
+		playerManager.init([new HumanPlayer("Player")], Math.min(spawnManager.botSpawns.length, 256));
 		territoryManager.init();
 
 		gridOutlineRenderer.init();
 		tileActionInterface.init();
+		gameTickingManager.init();
 
 		basicMapNavigationHandler.enable();
 		tileInteractionHandler.enable();
-		gameTickingManager.enable();
 	}
 
 	endGameScreen() {
@@ -16832,6 +16835,7 @@ export class GameManager {
 		playerManager.destroy();
 		gridOutlineRenderer.destroy();
 		tileActionInterface.destroy();
+		playerActionRelayManager.destroy();
 		basicMapNavigationHandler.disable();
 		tileInteractionHandler.disable();
 	}

@@ -1,17 +1,19 @@
 import {OffsetCoordinate} from "../../math/OffsetCoordinate";
-import {random, territoryManager} from "../GameManager";
+import {gameTickingManager, random, territoryManager, tileActionInterface} from "../GameManager";
 import {gameManager} from "../../main";
 import {CubeCoordinate} from "../../math/CubeCoordinate";
 
 export class SpawnManager {
 	botSpawns: CubeCoordinate[];
 	selectedData: { blocked: CubeCoordinate[], claimed: OffsetCoordinate[] }[];
+	inSpawnSelection: boolean;
 
 	init() {
 		let initial = new OffsetCoordinate(random.random_int(gameManager.width), random.random_int(gameManager.height)).toCube();
 		let openNodes = [initial];
 		let nodes = [initial];
 
+		this.inSpawnSelection = true;
 		while (openNodes.length > 0) {
 			let current = openNodes.shift();
 			for (let offset of [
@@ -47,7 +49,7 @@ export class SpawnManager {
 		this.botSpawns.splice(index, 1);
 		territoryManager.conquer(spawn.x, spawn.y, player);
 		spawn.onNeighbors((x, y) => {
-			if (x >= 0 && y >= 0 && x < gameManager.width && y < gameManager.height && gameManager.tileTypes[y][x] !== 0 && territoryManager.owner[y][x] === undefined) {
+			if (territoryManager.owner[y][x] === -1) {
 				territoryManager.conquer(x, y, player);
 			}
 		});
@@ -55,7 +57,7 @@ export class SpawnManager {
 	}
 
 	selectSpawn(player: number, x: number, y: number) {
-		if (territoryManager.owner[y][x] !== undefined) return;
+		if (territoryManager.owner[y][x] !== -1 && territoryManager.owner[y][x] !== player) return;
 		if (this.selectedData[player]) {
 			for (let blocked of this.selectedData[player].blocked) {
 				this.botSpawns.push(blocked);
@@ -72,11 +74,22 @@ export class SpawnManager {
 		territoryManager.conquer(x, y, player);
 		let claimed = [hex];
 		hex.onNeighbors((x, y) => {
-			if (x >= 0 && y >= 0 && x < gameManager.width && y < gameManager.height && gameManager.tileTypes[y][x] !== 0 && territoryManager.owner[y][x] === undefined) {
+			if (territoryManager.owner[y][x] === -1) {
 				territoryManager.conquer(x, y, player);
 				claimed.push(new OffsetCoordinate(x, y));
 			}
 		});
 		this.selectedData[player] = {blocked, claimed};
+
+		if (gameManager.isLocalGame) {
+			this.inSpawnSelection = false;
+
+			tileActionInterface.sprites[0].visible = true;
+			tileActionInterface.sprites[1].visible = false;
+
+			territoryManager.orderRerender();
+
+			gameTickingManager.enable();
+		}
 	}
 }
